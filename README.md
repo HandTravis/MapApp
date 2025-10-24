@@ -1,4 +1,4 @@
-# MY-APP
+# Mapp-App
 
 A full-stack, map-centric web application built with React, Node.js, and PostGIS.
 
