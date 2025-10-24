@@ -1,0 +1,281 @@
+openapi: 3.0.3
+info:
+  title: MY-APP API
+  description: A map-centric web application API
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@myapp.com
+
+servers:
+  - url: http://localhost:4000
+    description: Development server
+  - url: https://api.myapp.com
+    description: Production server
+
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      description: Returns the health status of the API
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "ok"
+
+  /readyz:
+    get:
+      summary: Readiness check
+      description: Returns the readiness status of the API
+      operationId: getReady
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API is ready
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "ready"
+
+  /pins:
+    post:
+      summary: Create a new pin
+      description: Creates a new pin at the specified location
+      operationId: createPin
+      tags:
+        - Pins
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePinRequest'
+      responses:
+        '201':
+          description: Pin created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePinResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: Get nearby pins
+      description: Retrieves pins within a specified radius of a location
+      operationId: getNearbyPins
+      tags:
+        - Pins
+      parameters:
+        - name: near
+          in: query
+          required: true
+          description: Center point as "lat,lng"
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*$'
+            example: "40.7128,-74.0060"
+        - name: radius
+          in: query
+          required: true
+          description: Search radius in meters
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            example: 1000
+      responses:
+        '200':
+          description: List of nearby pins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pin'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /search:
+    get:
+      summary: Search for POIs
+      description: Search for points of interest (mocked implementation)
+      operationId: searchPOIs
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+            minLength: 1
+            example: "coffee shop"
+      responses:
+        '200':
+          description: List of matching POIs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/POI'
+        '400':
+          description: Invalid search query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CreatePinRequest:
+      type: object
+      required:
+        - name
+        - lat
+        - lng
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Name of the pin
+          example: "My Favorite Coffee Shop"
+        lat:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+          description: Latitude coordinate
+          example: 40.7128
+        lng:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+          description: Longitude coordinate
+          example: -74.0060
+
+    CreatePinResponse:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the created pin
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        status:
+          type: string
+          description: Creation status
+          example: "created"
+
+    Pin:
+      type: object
+      required:
+        - id
+        - name
+        - lat
+        - lng
+        - distance_m
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the pin
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: Name of the pin
+          example: "My Favorite Coffee Shop"
+        lat:
+          type: number
+          format: float
+          description: Latitude coordinate
+          example: 40.7128
+        lng:
+          type: number
+          format: float
+          description: Longitude coordinate
+          example: -74.0060
+        distance_m:
+          type: number
+          format: float
+          description: Distance from search center in meters
+          example: 150.5
+
+    POI:
+      type: object
+      required:
+        - id
+        - name
+        - lat
+        - lng
+        - category
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the POI
+          example: "poi_123"
+        name:
+          type: string
+          description: Name of the POI
+          example: "Starbucks Coffee"
+        lat:
+          type: number
+          format: float
+          description: Latitude coordinate
+          example: 40.7128
+        lng:
+          type: number
+          format: float
+          description: Longitude coordinate
+          example: -74.0060
+        category:
+          type: string
+          description: Category of the POI
+          example: "coffee shop"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "ValidationError"
+        message:
+          type: string
+          description: Error message
+          example: "Invalid latitude value"
+
+tags:
+  - name: Health
+    description: Health and readiness checks
+  - name: Pins
+    description: Pin management operations
+  - name: Search
+    description: Search functionality
